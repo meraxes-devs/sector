@@ -10,6 +10,7 @@ from astropy.stats import biweight_location
 
 __all__ = ['likelihood_UV']
 
+logger = logging.getLogger(__name__)
 
 class likelihood_UV:
     """
@@ -285,7 +286,7 @@ try:
                 )
                 # Compute lnlikelihood
                 lnL, blob = self.estimator(M1600, beta, keys = snapshot)
-                logging.debug(
+                logger.debug(
                     '[comm %d] :: LF & CMR snapshot=%d lnL=%.2e'%(sampler.i_comm, snapshot, lnL)
                 )
                 # Save blobs
@@ -300,7 +301,7 @@ try:
                         sampler.i_comm
                     )
                     self._save_mags(fName, gals['ID'], M1600, beta)
-                    logging.info("[comm %d] :: Save output."%sampler.i_comm)
+                    logger.info("[comm %d] :: Save output."%sampler.i_comm)
                 #
                 return lnL
             else:
@@ -308,5 +309,5 @@ try:
 
 
 except:
-    logging.warn("Cannot import mhysa!")
+    logger.warn("Cannot import mhysa!")
 
