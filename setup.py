@@ -1,6 +1,5 @@
 from distutils.core import setup
-from distutils.extension import Extension
-from setuptools import find_packages
+from setuptools import find_packages, Extension
 from Cython.Distutils import build_ext
 
 
@@ -32,7 +31,7 @@ exts = [Extension("sector.utils",
                   extra_link_args = ['-fopenmp', '-lhdf5', '-lhdf5_hl'])]
 
 for e in exts:
-    e.cython_directives = {"embedsignature":True}
+    e.cython_directives = {"embedsignature":True, "language_level": "2"}
 
 exec(open('sector/version.py', 'r').read())
 
