@@ -31,7 +31,7 @@ int *Z_flag(csp_t *histories, int nMaxZ) {
     for(iZ = 0; iZ < nMaxZ; ++iZ)
         ZFlag[iZ] = 1;
     for(iB = 0; iB < nB; ++iB)
-        ZFlag[(int)(1000*bursts[iB].metals - 0.5)] = 0;
+        ZFlag[(int)(2000*bursts[iB].metals - 0.5)] = 0;
 
     return ZFlag;
 }
@@ -63,8 +63,8 @@ void init_templates_raw(sed_params_t *spectra, char *fName) {
     spectra->nZ = nZ;
     spectra->Z = (double*)malloc(nZ*sizeof(double));
     H5LTread_dataset_double(file_id, "/metals", spectra->Z);
-    spectra->minZ = (int)(spectra->Z[0]*1000 - .5);
-    spectra->maxZ = (int)(spectra->Z[nZ - 1]*1000 - .5);
+    spectra->minZ = (int)(spectra->Z[0]*2000 - .5);
+    spectra->maxZ = (int)(spectra->Z[nZ - 1]*2000 - .5);
     spectra->nMaxZ = spectra->maxZ - spectra->minZ + 1;
     printf("# Metallicity range:\n#\t%.3f to %.3f\n", spectra->Z[0], spectra->Z[nZ - 1]);
     // Read wavelength
@@ -427,7 +427,7 @@ void init_templates_working(sed_params_t *spectra, csp_t *pHistories,
         iA = i%nAgeStep;
         if (ageFlag[iA])
             continue;
-        interpZ = (minZ + iZ + 1.)/1000.;
+        interpZ = (minZ + iZ + 1.)/2000.;
         pData = workingData + i*nFlux;
         for(iF = 0; iF < nFlux; ++iF)
             pData[iF] = interp(interpZ, Z, refSpectra + (iF*nAgeStep+ iA)*nZ, nZ);

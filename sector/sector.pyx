@@ -65,7 +65,7 @@ cdef dust_params_t *init_dust_parameters(dust):
     cdef:
         int iG
         int nGal = len(dust)
-        double[:, ::1] mvDustParams = np.array(dust)
+        double[:, ::1] mvDustParams = np.array(dust).copy(order='C')
         dust_params_t *dustParams = <dust_params_t*>malloc(nGal*sizeof(dust_params_t))
         dust_params_t *pDustParams = dustParams
 

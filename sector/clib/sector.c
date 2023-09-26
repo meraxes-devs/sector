@@ -107,8 +107,8 @@ void trim_gal_params(gal_params_t *galParams, int minZ, int maxZ) {
     /* Set the metallicity of each SSP to the given range */
     int iB, iG;
 
-    float f_minZ = (minZ + 1.)/1000.;
-    float f_maxZ = (maxZ + 1.)/1000.;
+    float f_minZ = (minZ + 1.)/2000.;
+    float f_maxZ = (maxZ + 1.)/2000.;
     int metals;
     int nGal = galParams->nGal;
     csp_t *pHistories = galParams->histories;
@@ -119,7 +119,7 @@ void trim_gal_params(gal_params_t *galParams, int minZ, int maxZ) {
         nBurst = pHistories->nBurst;
         pBursts = pHistories->bursts;
         for(iB = 0; iB < nBurst; ++iB) {
-            metals = (int)(pBursts->metals*1000 - .5);
+            metals = (int)(pBursts->metals*2000 - .5);
             if (metals < minZ)
                 pBursts->metals = f_minZ;
             else if (metals > maxZ)
@@ -236,7 +236,7 @@ void compute_spectra(double *target, sed_params_t *spectra,
                     pBursts = pHistories->bursts + iP;
                     iAge = pBursts->index;
                     sfr = pBursts->sfr;
-                    metals = (int)(pBursts->metals*1000 - .5);
+                    metals = (int)(pBursts->metals*2000 - .5);
                     if (iAge > iAgeBC) {
                         offset = (metals*nAgeStep + iAge)*nFlux;
                         for(iF = 0; iF < nFlux; ++iF)
@@ -289,7 +289,7 @@ void compute_spectra(double *target, sed_params_t *spectra,
                 for(iP = 0; iP < nProg; ++iP) {
                     pBursts = pHistories->bursts + iP;
                     sfr = pBursts->sfr;
-                    metals = (int)(pBursts->metals*1000 - .5);
+                    metals = (int)(pBursts->metals*2000 - .5);
                     offset = (metals*nAgeStep + pBursts->index)*nFlux;
                     for(iF = 0 ; iF < nFlux; ++iF)
                         pTarget[iF] += sfr*workingData[offset + iF];
