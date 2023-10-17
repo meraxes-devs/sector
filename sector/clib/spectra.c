@@ -66,7 +66,7 @@ void init_templates_raw(sed_params_t *spectra, char *fName) {
     spectra->minZ = (int)(spectra->Z[0]*2000 - .5);
     spectra->maxZ = (int)(spectra->Z[nZ - 1]*2000 - .5);
     spectra->nMaxZ = spectra->maxZ - spectra->minZ + 1;
-    printf("# Metallicity range:\n#\t%.3f to %.3f\n", spectra->Z[0], spectra->Z[nZ - 1]);
+    printf("# Metallicity range:\n#\t%.4f to %.4f\n", spectra->Z[0], spectra->Z[nZ - 1]);
     // Read wavelength
     spectra->nWaves = nWaves;
     spectra->waves = (double*)malloc(nWaves*sizeof(double));
