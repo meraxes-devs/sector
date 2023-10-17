@@ -364,7 +364,7 @@ cdef class sector:
 
 def composite_spectra(
     fname, snapList, gals, h, Om0, sedPath = STARBURST99_Salpeter,
-    dust = None, approx = False, IGM = 'I2014',
+    dust = None, approx = False, IGM = 'I2014', Tadvance = 0,
     outType = 'ph',
     betaBands = [], restBands = [[1600, 100],], obsBands = [],
     obsFrame = False,
@@ -401,6 +401,9 @@ def composite_spectra(
         Method to calculate the transmission due to the Lyman
         absorption. It can only be 'I2014'. It is only applicable
         to observer frame quantities.
+    Tadvance: float
+        How earlier in units of yr to observe gals w.r.t. the end 
+        of the snapshot.
     outType: str
         If 'ph', output AB magnitudes in filters given by restBands
         and obsBands.
@@ -464,9 +467,9 @@ def composite_spectra(
 
     for iS in xrange(len(snapList)):
         if fromFile:
-            sfh = stellar_population(gals[iS], None, None)
+            sfh = stellar_population(gals[iS], None, None, Tadvance)
         else:
-            sfh = stellar_population(galData, snapList[iS], gals[iS])
+            sfh = stellar_population(galData, snapList[iS], gals[iS], Tadvance)
         if timeGrid != 0:
             sfh.reconstruct(timeGrid)
         core = sector(

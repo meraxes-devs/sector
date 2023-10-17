@@ -52,6 +52,7 @@ cdef class galaxy_tree_meraxes:
         # Unit: M_sun/yr
         self.sfr = <float**>malloc(snapNum*sizeof(float*))
         meraxes.set_little_h(h = h)
+        print('here')
         for snap in xrange(snapMax, -1, -1):
             try:
                 # Copy metallicity and star formation rate to the pointers
@@ -604,11 +605,11 @@ cdef class stellar_population:
         return self.data[idx]
 
 
-    def __init__(self, gals, snapshot = None, indices = None):
+    def __init__(self, gals, snapshot = None, indices = None, Tadvance = 0):
         pass
 
 
-    def __cinit__(self, gals, snapshot = None, indices = None):
+    def __cinit__(self, gals, snapshot = None, indices = None, Tadvance = 0):
         cdef:
             gal_params_t *gp = &self.gp
             galaxy_tree_meraxes galData = None
@@ -628,6 +629,11 @@ cdef class stellar_population:
             ageStep = np.zeros(snapshot, dtype = 'f8')
             for iA in xrange(snapshot):
                 ageStep[iA] = timeStep[snapshot - iA - 1] - timeStep[snapshot]
+                ageStep[iA] -= Tadvance
+
+            if ageStep[0] <= 0:
+                print("Warning: You ain't observing that early, mate!")
+
             gp.ageStep = init_1d_double(ageStep)
             # Store galaxy indices
             indices = np.asarray(indices, dtype = 'i4')
