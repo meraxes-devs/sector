@@ -51,8 +51,7 @@ cdef class galaxy_tree_meraxes:
         self.metals = <float**>malloc(snapNum*sizeof(float*))
         # Unit: M_sun/yr
         self.sfr = <float**>malloc(snapNum*sizeof(float*))
-        meraxes.set_little_h(h = h)
-        print('here')
+        meraxes.io.set_little_h(h = h)
         for snap in xrange(snapMax, -1, -1):
             try:
                 # Copy metallicity and star formation rate to the pointers
