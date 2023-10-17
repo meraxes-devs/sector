@@ -402,7 +402,7 @@ def composite_spectra(
         absorption. It can only be 'I2014'. It is only applicable
         to observer frame quantities.
     Tadvance: float
-        How earlier in units of yr to observe gals w.r.t. the end 
+        How earlier in units of Myr to observe gals w.r.t. the end 
         of the snapshot.
     outType: str
         If 'ph', output AB magnitudes in filters given by restBands
@@ -467,11 +467,13 @@ def composite_spectra(
 
     for iS in xrange(len(snapList)):
         if fromFile:
-            sfh = stellar_population(gals[iS], None, None, Tadvance)
+            sfh = stellar_population(gals[iS], None, None)
         else:
-            sfh = stellar_population(galData, snapList[iS], gals[iS], Tadvance)
+            sfh = stellar_population(galData, snapList[iS], gals[iS])
         if timeGrid != 0:
             sfh.reconstruct(timeGrid)
+        if Tadvance != 0:
+            sfh.shift_ageStep(Tadvance)
         core = sector(
             sfh, h, Om0, sedPath, IGM, outType, approx,
             betaBands, restBands, obsBands, obsFrame, True, nThread

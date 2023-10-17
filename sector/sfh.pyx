@@ -557,6 +557,18 @@ cdef class stellar_population:
             self._average_csp(newH + iG, dfH + iG, nAgeStep, timeGrid, newStep)
 
 
+    def shift_ageStep(self, Tadvance = 0):
+        """
+        Shift ageStep earlier by Tadvance.
+        """
+        
+        Tadvance *= 1e6
+        for iA in range(self.gp.nAgeStep):
+            self.gp.ageStep[iA] -= Tadvance
+
+        if self.gp.ageStep[0] <= 0:
+            print("Warning: You ain't observing that early, mate!")
+
     def mean_star_formation_rate(self, meanAge = 100e6):
         """
         Compute mean star formation rates over a given time scale.
@@ -604,11 +616,11 @@ cdef class stellar_population:
         return self.data[idx]
 
 
-    def __init__(self, gals, snapshot = None, indices = None, Tadvance = 0):
+    def __init__(self, gals, snapshot = None, indices = None):
         pass
 
 
-    def __cinit__(self, gals, snapshot = None, indices = None, Tadvance = 0):
+    def __cinit__(self, gals, snapshot = None, indices = None):
         cdef:
             gal_params_t *gp = &self.gp
             galaxy_tree_meraxes galData = None
@@ -628,10 +640,6 @@ cdef class stellar_population:
             ageStep = np.zeros(snapshot, dtype = 'f8')
             for iA in xrange(snapshot):
                 ageStep[iA] = timeStep[snapshot - iA - 1] - timeStep[snapshot]
-                ageStep[iA] -= Tadvance
-
-            if ageStep[0] <= 0:
-                print("Warning: You ain't observing that early, mate!")
 
             gp.ageStep = init_1d_double(ageStep)
             # Store galaxy indices
