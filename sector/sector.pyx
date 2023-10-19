@@ -310,7 +310,7 @@ cdef class sector:
             if addDust:
                 dustParams = init_dust_parameters(dust[iS])
             c_output = composite_spectra_cext(
-                pSpectra, galParams, dustParams, self.outType, self.approx, self.nThread
+                pSpectra, galParams, dustParams, self.outType, self.approx, self.nThread, self.population
             )
             #
             singleOut = self._convert_output(c_output, pSpectra, galParams.nGal)

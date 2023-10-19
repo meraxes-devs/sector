@@ -66,8 +66,6 @@ void init_templates_specialIII(sed_params_t *spectra, int approx) {
     free(outBC);
 	spectra->inBC = refInBC;
 	spectra->outBC = refOutBC;
-    free(refInBC);
-    free(refOutBC);
 }
 
 void init_templates_special(sed_params_t *spectra, double tBC, int approx) {

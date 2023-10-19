@@ -342,10 +342,6 @@ cdef class stellar_population:
         def __get__(self):
             return self.gp.z
 
-    property population:
-        def __get__(self):
-            return self.gp.population
-
 
     cdef void _update_age_step(self, double[:] newStep):
         cdef:
@@ -410,7 +406,7 @@ cdef class stellar_population:
                 index = bursts[iB].index
                 if index >= iLow and index < iHigh:
                     dm = bursts[iB].sfr
-                    if self.population == 2:
+                    if self.gp.population == 2:
                         dm *= dfInterval[index]
                     sfr += dm
                     metals += bursts[iB].metals*dm

@@ -165,7 +165,7 @@ void fit_UV_slope(double *pTarget, double *pFit, int nGal, int nFlux,
 void compute_spectra(double *target, sed_params_t *spectra,
                      gal_params_t *galParams, dust_params_t *dustParams,
                      int approx, short nThread, int population) {
-	// NOTE: if dealing with multiple galaxies, they have to be the same population
+    // NOTE: if dealing with multiple galaxies, they have to be the same population
     // Initialise SED templates
     spectra->ready = NULL;
     spectra->working = NULL;
@@ -173,9 +173,9 @@ void compute_spectra(double *target, sed_params_t *spectra,
     // Integrate SED templates over given time steps
     spectra->nAgeStep = galParams->nAgeStep;
     spectra->ageStep = galParams->ageStep;
-	if (population == 2)
+    if (population == 2)
         init_templates_integrated(spectra);
-	else
+    else
         init_templates_interpolate(spectra);
 
     // Initialise templates for birth cloud if necessary
@@ -215,21 +215,21 @@ void compute_spectra(double *target, sed_params_t *spectra,
 
 
         if (approx) {
-			if (population == 2){
-	           init_templates_working(&omp_spectra, histories, NULL, -1);
-    	       init_templates_special(&omp_spectra, dustParams->tBC, approx);
-			}
-			else{
-	           init_templates_workingIII(&omp_spectra);
-    	       init_templates_specialIII(&omp_spectra, approx);
-			}
+            if (population == 2){
+               init_templates_working(&omp_spectra, histories, NULL, -1);
+               init_templates_special(&omp_spectra, dustParams->tBC, approx);
+            }
+            else{
+               init_templates_workingIII(&omp_spectra);
+               init_templates_specialIII(&omp_spectra, approx);
+            }
 
             int iAge, iAgeBC;
             // Assume that tBC is the same for every galaxy
-			if (population == 2)
-            	iAgeBC = birth_cloud_interval(dustParams->tBC, galParams->ageStep, nAgeStep);
-			else
-				iAgeBC = 0;
+            if (population == 2)
+                iAgeBC = birth_cloud_interval(dustParams->tBC, galParams->ageStep, nAgeStep);
+            else
+                iAgeBC = 0;
 
             double *inBC = omp_spectra.inBC;
             double *outBC = omp_spectra.outBC;
@@ -251,10 +251,10 @@ void compute_spectra(double *target, sed_params_t *spectra,
                     pBursts = pHistories->bursts + iP;
                     iAge = pBursts->index;
                     sfr = pBursts->sfr;
-					if (population == 2)
-                    	metals = (int)(pBursts->metals*1000 - .5);
-					else
-						metals = 0;
+                    if (population == 2)
+                        metals = (int)(pBursts->metals*1000 - .5);
+                    else
+                        metals = 0;
                     if (iAge > iAgeBC) {
                         offset = (metals*nAgeStep + iAge)*nFlux;
                         for(iF = 0; iF < nFlux; ++iF)
@@ -275,8 +275,8 @@ void compute_spectra(double *target, sed_params_t *spectra,
                 }
 
                 // Apply dust absorption
-				if (population == 2)
-	                dust_absorption_approx(inBCFlux, outBCFlux, omp_spectra.centreWaves, nFlux,
+                if (population == 2)
+                    dust_absorption_approx(inBCFlux, outBCFlux, omp_spectra.centreWaves, nFlux,
                                        dustParams + iG);
 
                 for(iF = 0; iF < nFlux; ++iF)
@@ -291,38 +291,38 @@ void compute_spectra(double *target, sed_params_t *spectra,
             free(outBCFlux);
         }
         else {
-			if (population == 2){
-	            if (dustParams == NULL)
-    	            init_templates_working(&omp_spectra, histories, NULL, -1);
-        	    else
-            	    //  -Assume that tBC is the same for every galaxy
-                	init_templates_special(&omp_spectra, dustParams->tBC, approx);
-			}
-			else{
-	            if (dustParams == NULL)
-    	            init_templates_workingIII(&omp_spectra);
-        	    else
-                	init_templates_specialIII(&omp_spectra, approx);
-			}
+            if (population == 2){
+                if (dustParams == NULL)
+                    init_templates_working(&omp_spectra, histories, NULL, -1);
+                else
+                    //  -Assume that tBC is the same for every galaxy
+                    init_templates_special(&omp_spectra, dustParams->tBC, approx);
+            }
+            else{
+                if (dustParams == NULL)
+                    init_templates_workingIII(&omp_spectra);
+                else
+                    init_templates_specialIII(&omp_spectra, approx);
+            }
 
             #pragma omp for schedule(static, 1)
             for(iG = 0; iG < nGal; ++iG) {
                 pHistories = histories + iG;
                 // Add dust absorption to SED templates
-			    if (population == 2)
+                if (population == 2)
                     init_templates_working(&omp_spectra, pHistories, dustParams, iG);
-				else
-    	            init_templates_workingIII(&omp_spectra);
+                else
+                    init_templates_workingIII(&omp_spectra);
                 // Sum contributions from all progenitors
                 nProg = pHistories->nBurst;
                 pTarget = target + iG*nFlux;
                 for(iP = 0; iP < nProg; ++iP) {
                     pBursts = pHistories->bursts + iP;
                     sfr = pBursts->sfr;
-					if (population == 2)
+                    if (population == 2)
                         metals = (int)(pBursts->metals*1000 - .5);
-					else
-						metals = 0;
+                    else
+                        metals = 0;
                     offset = (metals*nAgeStep + pBursts->index)*nFlux;
                     for(iF = 0 ; iF < nFlux; ++iF)
                         pTarget[iF] += sfr*workingData[offset + iF];
@@ -351,8 +351,8 @@ double *composite_spectra_cext(sed_params_t *spectra,
                                short outType, short approx, short nThread, int population) {
     // Trim the metallicity of each SSP such that it is within the range of
     // input SED templates
-	if (population == 2)
-	    trim_gal_params(galParams, spectra->minZ, spectra->maxZ);
+    if (population == 2)
+        trim_gal_params(galParams, spectra->minZ, spectra->maxZ);
 
     #ifdef TIMING
         init_profiler();

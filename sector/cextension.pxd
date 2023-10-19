@@ -83,5 +83,5 @@ cdef extern from "clib/sector.h":
 cdef extern from "clib/sector.h" nogil:
     double *composite_spectra_cext(
         sed_params_t *spectra, gal_params_t *galParams,
-        dust_params_t *dustParams, short outType, short approx, short nThread
+        dust_params_t *dustParams, short outType, short approx, short nThread, int population
     )

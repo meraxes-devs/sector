@@ -100,7 +100,7 @@ void fit_UV_slope(double *pTarget, double *pFit, int nGal, int nFlux,
                   double *logWaves, int nFit, int nR);
 double *composite_spectra_cext(sed_params_t *spectra,
                                gal_params_t *galParams, dust_params_t *dustParams,
-                               short outType, short approx, short nThread);
+                               short outType, short approx, short nThread, int population);
 #endif
 
 #ifndef _SPECTRA_
