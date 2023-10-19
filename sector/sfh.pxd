@@ -8,6 +8,7 @@ cdef class galaxy_tree_meraxes:
     cdef:
         object fname
         double h
+        int population
         # Poniters to store data
         int **firstProgenitor
         int **nextProgenitor

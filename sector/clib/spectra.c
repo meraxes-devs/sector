@@ -31,11 +31,57 @@ int *Z_flag(csp_t *histories, int nMaxZ) {
     for(iZ = 0; iZ < nMaxZ; ++iZ)
         ZFlag[iZ] = 1;
     for(iB = 0; iB < nB; ++iB)
-        ZFlag[(int)(2000*bursts[iB].metals - 0.5)] = 0;
+        ZFlag[(int)(1000*bursts[iB].metals - 0.5)] = 0;
 
     return ZFlag;
 }
 
+
+void init_templates_rawIII(sed_params_t *spectra, char *fName) {
+    /* File name should be "sed_libraryIII.hdf5" and contain:
+     * "/waves" Wavelength grid [AA] (1-D dataset)
+     * "/age" Stellar age grid [yr] (1-D dataset)
+     * "/flux" Flux density [erg/s/AA/cm^2] (3-D dataset)
+     *
+     * Flux densities should be normlised by the surface area of 10 pc
+     * sphere. The first, second, and third dimensions should be metallicty,
+     * wavelength and stellar age respectively.
+     */
+    hid_t file_id;
+    hsize_t dims[3];
+
+    printf("#***********************************************************\n");
+    printf("# Read PopIII SED templates\n");
+    file_id = H5Fopen(fName, H5F_ACC_RDONLY, H5P_DEFAULT);
+    // Read dimensions
+    H5LTget_dataset_info(file_id, "/flux", dims, NULL, NULL);
+    int nWaves = dims[1];
+    int nAge = dims[2];
+    // Fix metallicity range
+    spectra->nZ = 1;
+    spectra->Z = (double*)malloc(1*sizeof(double));
+    spectra->Z[0] = 0;
+    spectra->minZ = 0;
+    spectra->maxZ = 0;
+    spectra->nMaxZ = spectra->maxZ - spectra->minZ + 1;
+    // Read wavelength
+    spectra->nWaves = nWaves;
+    spectra->waves = (double*)malloc(nWaves*sizeof(double));
+    H5LTread_dataset_double(file_id, "/waves", spectra->waves);
+    printf("# Wavelength range:\n#\t%.1f AA to %.1f AA\n",
+           spectra->waves[0], spectra->waves[nWaves - 1]);
+    // Read stellar age
+    spectra->nAge = nAge;
+    spectra->age = (double*)malloc(nAge*sizeof(double));
+    H5LTread_dataset_double(file_id, "/age", spectra->age);
+    printf("# Stellar age range:\n#\t%.2f Myr to %.2f Myr\n",
+           spectra->age[0]*1e-6, spectra->age[nAge - 1]*1e-6);
+    // Read flux
+    spectra->raw = (double*)malloc(nWaves*nAge*sizeof(double));
+    H5LTread_dataset_double(file_id, "/flux", spectra->raw);
+    H5Fclose(file_id);
+    printf("#***********************************************************\n\n");
+}
 
 void init_templates_raw(sed_params_t *spectra, char *fName) {
     /* File name should be "sed_library.hdf5" and contain:
@@ -63,8 +109,8 @@ void init_templates_raw(sed_params_t *spectra, char *fName) {
     spectra->nZ = nZ;
     spectra->Z = (double*)malloc(nZ*sizeof(double));
     H5LTread_dataset_double(file_id, "/metals", spectra->Z);
-    spectra->minZ = (int)(spectra->Z[0]*2000 - .5);
-    spectra->maxZ = (int)(spectra->Z[nZ - 1]*2000 - .5);
+    spectra->minZ = (int)(spectra->Z[0]*1000 - .5);
+    spectra->maxZ = (int)(spectra->Z[nZ - 1]*1000 - .5);
     spectra->nMaxZ = spectra->maxZ - spectra->minZ + 1;
     printf("# Metallicity range:\n#\t%.4f to %.4f\n", spectra->Z[0], spectra->Z[nZ - 1]);
     // Read wavelength
@@ -299,6 +345,31 @@ void init_filters(sed_params_t *spectra,
 }
 
 
+void init_templates_interpolate(sed_params_t *spectra) {
+    int iA, iW, iZ;
+    double *pData;
+
+    int nAgeStep = spectra->nAgeStep;
+    double *ageStep = spectra->ageStep;
+    int nAge = spectra->nAge;
+    double *age = spectra->age;
+    int nWaves = spectra->nWaves;
+    int nZ = spectra->nZ;
+    double *data = spectra->raw;
+    // Spectra after integration over time
+    // The first dimension refers to metallicites and ages
+    // The last dimension refers to wavelengths
+    double *intData = malloc(nZ*nAgeStep*nWaves*sizeof(double));
+
+    for(iZ = 0; iZ < nZ; ++iZ)
+        for(iA = 0; iA < nAgeStep; ++iA) {
+            pData = intData + (iZ*nAgeStep + iA)*nWaves;
+            for(iW = 0; iW < nWaves; ++iW)
+                pData[iW] = interp(ageStep[iA], age, data + (iZ*nWaves + iW)*nAge, nAge);
+        }
+    spectra->integrated = intData;
+}
+
 void init_templates_integrated(sed_params_t *spectra) {
     int iA, iW, iZ;
     double *pData;
@@ -333,6 +404,57 @@ void init_templates_integrated(sed_params_t *spectra) {
     spectra->integrated = intData;
 }
 
+
+void init_templates_workingIII(sed_params_t *spectra) {
+
+    int nWaves = spectra->nWaves;
+    int nAgeStep = spectra->nAgeStep;
+    int nFlux = spectra->nFlux;
+    double *readyData = spectra->ready;
+    double *workingData = spectra->working;
+
+    memcpy(readyData, spectra->integrated, nAgeStep*nWaves*sizeof(double));
+
+    int iA, iF, iW;
+
+    if (spectra->filters == NULL) {
+        double z = spectra->z;
+        if (nWaves!=nFlux){
+            printf("Warning!, nWaves(%d)!=nFlux(%d) when filters is null?", nWaves, nFlux);
+            exit(-1);
+        }
+
+        if (spectra->nObs > 0) {
+            for(iA = 0; iA < nAgeStep; ++iA) {
+                for(iW = 0; iW < nWaves; ++iW)
+                   readyData[iA*nWaves+iW] /= 1. + z;
+            }
+        }
+        for(iA = 0; iA < nAgeStep; ++iA) {
+            for(iW = 0; iW < nWaves; ++iW)
+                workingData[iA*nWaves+iW] = readyData[iA*nWaves+iW];
+        }
+    }
+    else {
+        // Intgrate SED templates over filters
+        int nFW;
+        int *nFilterWaves = spectra->nFilterWaves;
+        double *pFilterWaves = spectra->filterWaves;
+        double *pFilters = spectra->filters;
+        double *waves = spectra->waves;
+
+        for(iF = 0; iF < nFlux; ++iF) {
+            nFW = nFilterWaves[iF];
+            for(iA = 0; iA < nAgeStep; ++iA) {
+                workingData[iA*nFlux+iF] = trapz_filter(pFilters, pFilterWaves, nFW,
+                                                    readyData + iA*nWaves,
+                                                    waves, nWaves);
+            }
+            pFilterWaves += nFW;
+            pFilters += nFW;
+        }
+    }
+}
 
 void init_templates_working(sed_params_t *spectra, csp_t *pHistories,
                             dust_params_t *dustParams, int iG) {
@@ -427,7 +549,7 @@ void init_templates_working(sed_params_t *spectra, csp_t *pHistories,
         iA = i%nAgeStep;
         if (ageFlag[iA])
             continue;
-        interpZ = (minZ + iZ + 1.)/2000.;
+        interpZ = (minZ + iZ + 1.)/1000.;
         pData = workingData + i*nFlux;
         for(iF = 0; iF < nFlux; ++iF)
             pData[iF] = interp(interpZ, Z, refSpectra + (iF*nAgeStep+ iA)*nZ, nZ);

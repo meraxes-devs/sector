@@ -12,6 +12,64 @@ int birth_cloud_interval(double tBC, double *ageStep, int nAgeStep) {
 }
 
 
+void init_templates_specialIII(sed_params_t *spectra, int approx) {
+    /* Special templates are for birth cloud 
+     * Dimension: wavelength
+	 * asssuming tBC = 0 for PopIII
+     */
+
+    // Find the time inverval containning the birth cloud
+    int nWaves = spectra->nWaves;
+    double *age = spectra->age;
+    double *ageStep = spectra->ageStep;
+
+    // Integrate special templates over the time step of the birth cloud
+    int iW;
+    int nAge = spectra->nAge;
+    double *rawData = spectra->raw;
+    double *inBC = malloc(nWaves*sizeof(double));
+    double *outBC = malloc(nWaves*sizeof(double));
+
+    for(iW = 0; iW < nWaves; ++iW) {
+		inBC[iW] = 0;
+        outBC[iW] = interp(ageStep[0], age, rawData + iW*nAge, nAge);
+    }
+    if (!approx) {
+        spectra->inBC = inBC;
+        spectra->outBC = outBC;
+        return;
+    }
+
+    // Intgrate special templates over filters
+    int iF;
+    int nFlux = spectra->nFlux;
+	double *refInBC = malloc(nFlux*sizeof(double));
+    double *refOutBC = malloc(nFlux*sizeof(double));
+	double *pInBC = refInBC;
+    double *pOutBC = refOutBC;
+
+    int nFW;
+    int *nFilterWaves = spectra->nFilterWaves;
+    double *pFilterWaves = spectra->filterWaves;
+    double *pFilters = spectra->filters;
+    double *waves = spectra->waves;
+
+    for(iF = 0; iF < nFlux; ++iF) {
+        nFW = nFilterWaves[iF];
+		pInBC[iF] = 0.0;
+        pOutBC[iF] = trapz_filter(pFilters, pFilterWaves, nFW,
+                                                outBC, waves, nWaves);
+        pFilterWaves += nFW;
+        pFilters += nFW;
+    }
+    free(inBC);
+    free(outBC);
+	spectra->inBC = refInBC;
+	spectra->outBC = refOutBC;
+    free(refInBC);
+    free(refOutBC);
+}
+
 void init_templates_special(sed_params_t *spectra, double tBC, int approx) {
     /* Special templates are for birth cloud 
      * Dimension: metallicity × wavelength
@@ -101,7 +159,7 @@ void init_templates_special(sed_params_t *spectra, double tBC, int approx) {
     pInBC = inBC;
     pOutBC = outBC;
     for(iZ = 0; iZ < nMaxZ; ++iZ) {
-        interpZ = (minZ + iZ + 1.)/2000.;
+        interpZ = (minZ + iZ + 1.)/1000.;
         for(iF = 0; iF < nFlux; ++iF) {
             pInBC[iF] = interp(interpZ, Z, refInBC + iF*nZ, nZ);
             pOutBC[iF] = interp(interpZ, Z, refOutBC + iF*nZ, nZ);

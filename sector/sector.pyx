@@ -138,13 +138,16 @@ cdef void generate_filters(
 
 cdef int init_templates_sector(
     sed_params_t *spectra, gal_params_t *galParams,
-    sedPath, IGM, outType, betaBands, restBands, obsBands, obsFrame
+    sedPath, IGM, outType, betaBands, restBands, obsBands, obsFrame, population
 ):
     cdef:
         int c_outType
         double z = galParams.z
     # Read raw SED templates
-    init_templates_raw(spectra, sedPath)
+    if population == 2:
+        init_templates_raw(spectra, sedPath)
+    else:
+        init_templates_rawIII(spectra, sedPath)
     # Compute the transmission of the IGM
     if IGM == 'I2014':
         spectra.igm = 1
@@ -183,7 +186,7 @@ def get_output_name(prefix, postfix, snap, path):
     return os.path.join(path, fname)
 
 
-def save_star_formation_history(fname, snapList, idxList, h, prefix = 'sfh', outPath = './'):
+def save_star_formation_history(fname, snapList, idxList, h, prefix = 'sfh', outPath = './', population = 2):
     """
     Store star formation history to the disk.
 
@@ -209,11 +212,11 @@ def save_star_formation_history(fname, snapList, idxList, h, prefix = 'sfh', out
         idxList = [idxList]
     snapMax = max(snapList)
 
-    cdef galaxy_tree_meraxes galData = galaxy_tree_meraxes(fname, snapMax, h)
+    cdef galaxy_tree_meraxes galData = galaxy_tree_meraxes(fname, snapMax, h, population)
     # Read and save galaxy merge trees
     for iS in xrange(len(snapList)):
         outName = get_output_name(prefix, '.bin', snapList[iS], outPath)
-        stellar_population(galData, snapList[iS], idxList[iS]).save(outName)
+        stellar_population(galData, snapList[iS], idxList[iS], population).save(outName)
 
 
 cdef class sector:
@@ -232,6 +235,7 @@ cdef class sector:
         int pandas
         short approx
         short nThread
+        int population
 
 
     property waves:
@@ -327,7 +331,7 @@ cdef class sector:
         self, sfh, h, Om0, sedPath = STARBURST99_Salpeter,
         IGM = 'I2014', outType = 'ph', approx = False,
         betaBands = [], restBands = [[1600., 100.],], obsBands = [], obsFrame = False,
-        pandas = False, nThread = 1
+        pandas = False, nThread = 1, population = 2
     ):
         self.sfh = np.ravel(sfh)
         self.nSnap = len(self.sfh)
@@ -345,12 +349,13 @@ cdef class sector:
         self.pandas = 1 if pandas else 0
         self.approx = <short>approx
         self.nThread = <short>nThread
+        self.population = population
 
         cdef int iS
         for iS in xrange(self.nSnap):
             self.outType = init_templates_sector(
                 self.spectra + iS, (<stellar_population>self.sfh[iS]).pointer(), sedPath,
-                IGM, outType, betaBands, restBands, obsBands, obsFrame
+                IGM, outType, betaBands, restBands, obsBands, obsFrame, population
             )
             
 
@@ -364,7 +369,7 @@ cdef class sector:
 
 def composite_spectra(
     fname, snapList, gals, h, Om0, sedPath = STARBURST99_Salpeter,
-    dust = None, approx = False, IGM = 'I2014', Tadvance = 0,
+    dust = None, approx = False, IGM = 'I2014', Tadvance = 0, population = 2,
     outType = 'ph',
     betaBands = [], restBands = [[1600, 100],], obsBands = [],
     obsFrame = False,
@@ -463,20 +468,20 @@ def composite_spectra(
     cdef galaxy_tree_meraxes galData = None
     fromFile = isinstance(gals[0], str)
     if not fromFile:
-        galData = galaxy_tree_meraxes(fname, snapMax, h)
+        galData = galaxy_tree_meraxes(fname, snapMax, h, population)
 
     for iS in xrange(len(snapList)):
         if fromFile:
-            sfh = stellar_population(gals[iS], None, None)
+            sfh = stellar_population(gals[iS], None, None, population)
         else:
-            sfh = stellar_population(galData, snapList[iS], gals[iS])
+            sfh = stellar_population(galData, snapList[iS], gals[iS], population)
         if timeGrid != 0:
             sfh.reconstruct(timeGrid)
         if Tadvance != 0:
             sfh.shift_ageStep(Tadvance)
         core = sector(
             sfh, h, Om0, sedPath, IGM, outType, approx,
-            betaBands, restBands, obsBands, obsFrame, True, nThread
+            betaBands, restBands, obsBands, obsFrame, True, nThread, population 
         )
         if dust is None:
             output = core.run()[0]

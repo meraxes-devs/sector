@@ -32,12 +32,13 @@ def timing_end():
 DEF MAX_NODE = 100000
 
 cdef class galaxy_tree_meraxes:
-    def __cinit__(self, fname, int snapMax, double h):
+    def __cinit__(self, fname, int snapMax, double h, int population):
         #=====================================================================
         # Load model output
         #=====================================================================
         self.fname = fname
         self.h = h
+        self.population = population
         cdef:
             int snapNum = snapMax+ 1
             int snapMin = snapMax
@@ -55,13 +56,19 @@ cdef class galaxy_tree_meraxes:
         for snap in xrange(snapMax, -1, -1):
             try:
                 # Copy metallicity and star formation rate to the pointers
-                gals = meraxes.io.read_gals(fname, snap,
-                                            props = ["ColdGas", "MetalsColdGas", "Sfr"])
+                if population == 2:
+                    props = ["ColdGas", "MetalsColdGas", "Sfr"]
+                else:
+                    props = ["ColdGas", "MetalsColdGas", "NewStars"]
+                gals = meraxes.io.read_gals(fname, snap, props=props)
                 print ''
                 metals = gals["MetalsColdGas"]/gals["ColdGas"]
                 metals[np.isnan(metals)] = 0.001
                 self.metals[snap] = init_1d_float(metals)
-                self.sfr[snap] = init_1d_float(gals["Sfr"])
+                if self.population==2:
+                    self.sfr[snap] = init_1d_float(gals["Sfr"])
+                else:
+                    self.sfr[snap] = init_1d_float(gals["NewStars"][:,0] * 1e10)
                 snapMin = snap
                 gals = None
             except IndexError:
@@ -206,6 +213,7 @@ cdef void save_gal_params(gal_params_t *galParams, char *fname):
         int *indices = galParams.indices
         csp_t *histories = galParams.histories
         llong_t *ids = galParams.ids
+        int population = galParams.population
 
         int nBurst
 
@@ -218,6 +226,7 @@ cdef void save_gal_params(gal_params_t *galParams, char *fname):
     # Write indices
     fwrite(&nGal, sizeof(int), 1, fp)
     fwrite(indices, sizeof(int), nGal, fp)
+    fwrite(&population, sizeof(int), 1, fp)
     # Write histories
     for iG in xrange(nGal):
         nBurst = histories[iG].nBurst
@@ -242,6 +251,7 @@ cdef void read_gal_params(gal_params_t *galParams, char *fname):
         llong_t *ids
 
         int nBurst
+        int population
 
     fp = fopen(fname, 'rb')
     # Read redshift
@@ -254,6 +264,7 @@ cdef void read_gal_params(gal_params_t *galParams, char *fname):
     fread(&nGal, sizeof(int), 1, fp)
     indices = <int*>malloc(nGal*sizeof(int))
     fread(indices, sizeof(int), nGal, fp)
+    fread(&population, sizeof(int), 1, fp)
     # Read histories
     histories = <csp_t*>malloc(nGal*sizeof(csp_t))
     pHistories = histories
@@ -275,6 +286,7 @@ cdef void read_gal_params(gal_params_t *galParams, char *fname):
     galParams.indices = indices
     galParams.histories = histories
     galParams.ids = ids
+    galParams.population = population
 
 
 cdef void free_gal_params(gal_params_t *galParams):
@@ -329,6 +341,10 @@ cdef class stellar_population:
     property z:
         def __get__(self):
             return self.gp.z
+
+    property population:
+        def __get__(self):
+            return self.gp.population
 
 
     cdef void _update_age_step(self, double[:] newStep):
@@ -393,7 +409,9 @@ cdef class stellar_population:
             for iB in xrange(nB):
                 index = bursts[iB].index
                 if index >= iLow and index < iHigh:
-                    dm = bursts[iB].sfr*dfInterval[index]
+                    dm = bursts[iB].sfr
+                    if self.population == 2:
+                        dm *= dfInterval[index]
                     sfr += dm
                     metals += bursts[iB].metals*dm
             if sfr != 0.:
@@ -616,11 +634,11 @@ cdef class stellar_population:
         return self.data[idx]
 
 
-    def __init__(self, gals, snapshot = None, indices = None):
+    def __init__(self, gals, snapshot = None, indices = None, population = 2):
         pass
 
 
-    def __cinit__(self, gals, snapshot = None, indices = None):
+    def __cinit__(self, gals, snapshot = None, indices = None, population = 2):
         cdef:
             gal_params_t *gp = &self.gp
             galaxy_tree_meraxes galData = None
@@ -634,6 +652,7 @@ cdef class stellar_population:
             galData = <galaxy_tree_meraxes>gals
             # Read redshift
             gp.z = meraxes.io.grab_redshift(galData.fname, snapshot)
+            gp.population = population
             # Read lookback time
             gp.nAgeStep = snapshot
             timeStep = meraxes.io.read_snaplist(galData.fname, galData.h)[2]*1e6 # Convert Myr to yr
