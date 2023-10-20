@@ -571,17 +571,18 @@ cdef class stellar_population:
             self._average_csp(newH + iG, dfH + iG, nAgeStep, timeGrid, newStep)
 
 
-    def shift_ageStep(self, Tadvance = 0):
+    def shift_ageStep(self, DeltaT = 0):
         """
-        Shift ageStep earlier by Tadvance.
+        Shift ageStep to DeltaT w.r.t. the begining of the current snapshot.
         """
         
-        Tadvance *= 1e6
-        for iA in range(self.gp.nAgeStep):
-            self.gp.ageStep[iA] -= Tadvance
+        DeltaT *= -1e6
+        DeltaT += self.gp.ageStep[0]
+        if DeltaT < 0:
+            print("Warning: You are observing it in a furture snapshot!")
 
-        if self.gp.ageStep[0] <= 0:
-            print("Warning: You ain't observing that early, mate!")
+        for iA in range(self.gp.nAgeStep):
+            self.gp.ageStep[iA] -= DeltaT
 
     def mean_star_formation_rate(self, meanAge = 100e6):
         """
