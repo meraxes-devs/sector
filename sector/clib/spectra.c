@@ -48,15 +48,15 @@ void init_templates_rawIII(sed_params_t *spectra, char *fName) {
      * wavelength and stellar age respectively.
      */
     hid_t file_id;
-    hsize_t dims[3];
+    hsize_t dims[2];
 
     printf("#***********************************************************\n");
     printf("# Read PopIII SED templates\n");
     file_id = H5Fopen(fName, H5F_ACC_RDONLY, H5P_DEFAULT);
     // Read dimensions
     H5LTget_dataset_info(file_id, "/flux", dims, NULL, NULL);
-    int nWaves = dims[1];
-    int nAge = dims[2];
+    int nWaves = dims[0];
+    int nAge = dims[1];
     // Fix metallicity range
     spectra->nZ = 1;
     spectra->Z = (double*)malloc(1*sizeof(double));
