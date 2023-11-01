@@ -221,7 +221,6 @@ void compute_spectra(double *target, sed_params_t *spectra,
             }
             else{
                init_templates_workingIII(&omp_spectra);
-               init_templates_specialIII(&omp_spectra, approx);
             }
 
             int iAge, iAgeBC;
@@ -251,27 +250,32 @@ void compute_spectra(double *target, sed_params_t *spectra,
                     pBursts = pHistories->bursts + iP;
                     iAge = pBursts->index;
                     sfr = pBursts->sfr;
-                    if (population == 2)
-                        metals = (int)(pBursts->metals*1000 - .5);
-                    else
-                        metals = 0;
-                    if (iAge > iAgeBC) {
-                        offset = (metals*nAgeStep + iAge)*nFlux;
+                    if (population == 2){
+                            metals = (int)(pBursts->metals*1000 - .5);
+                        if (iAge > iAgeBC) {
+                            offset = (metals*nAgeStep + iAge)*nFlux;
+                            for(iF = 0; iF < nFlux; ++iF)
+                                outBCFlux[iF] += sfr*workingData[offset + iF];
+                        }
+                        else if (iAge == iAgeBC) {
+                            offset = metals*nFlux;
+                            for(iF = 0; iF < nFlux; ++iF) {
+                                inBCFlux[iF] += sfr*inBC[offset + iF];
+                                outBCFlux[iF] += sfr*outBC[offset + iF];
+                            }
+                        }
+                        else {
+                            offset = (metals*nAgeStep + iAge)*nFlux;
+                            for(iF = 0; iF < nFlux; ++iF)
+                                inBCFlux[iF] += sfr*workingData[offset +iF];
+                        }
+                    }
+                    else{
+                        offset = iAge*nFlux;
                         for(iF = 0; iF < nFlux; ++iF)
                             outBCFlux[iF] += sfr*workingData[offset + iF];
                     }
-                    else if (iAge == iAgeBC) {
-                        offset = metals*nFlux;
-                        for(iF = 0; iF < nFlux; ++iF) {
-                            inBCFlux[iF] += sfr*inBC[offset + iF];
-                            outBCFlux[iF] += sfr*outBC[offset + iF];
-                        }
-                    }
-                    else {
-                        offset = (metals*nAgeStep + iAge)*nFlux;
-                        for(iF = 0; iF < nFlux; ++iF)
-                            inBCFlux[iF] += sfr*workingData[offset +iF];
-                    }
+
                 }
 
                 // Apply dust absorption
@@ -301,8 +305,6 @@ void compute_spectra(double *target, sed_params_t *spectra,
             else{
                 if (dustParams == NULL)
                     init_templates_workingIII(&omp_spectra);
-                else
-                    init_templates_specialIII(&omp_spectra, approx);
             }
 
             #pragma omp for schedule(static, 1)

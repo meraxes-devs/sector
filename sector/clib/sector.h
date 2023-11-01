@@ -122,7 +122,6 @@ void free_filters(sed_params_t *spectra);
 #ifndef _DUST_
 int birth_cloud_interval(double tBC, double *ageStep, int nAgeStep);
 void init_templates_special(sed_params_t *spectra, double tBC, int approx);
-void init_templates_specialIII(sed_params_t *spectra, int approx);
 void dust_absorption(sed_params_t *spectra, dust_params_t *dustParams);
 void dust_absorption_approx(double *inBCFlux, double *outBCFlux, double *centreWaves, int nFlux,
                             dust_params_t *dustParams);
