@@ -61,7 +61,6 @@ cdef class galaxy_tree_meraxes:
                 else:
                     props = ["ColdGas", "MetalsColdGas", "NewStars"]
                 gals = meraxes.io.read_gals(fname, snap, props=props)
-                print ''
                 metals = gals["MetalsColdGas"]/gals["ColdGas"]
                 metals[np.isnan(metals)] = 0.001
                 self.metals[snap] = init_1d_float(metals)
@@ -176,7 +175,7 @@ cdef class galaxy_tree_meraxes:
 
     def get_galaxy_ID(self, int tSnap, int[:] indices):
         return meraxes.io.read_gals(
-            self.fname, tSnap, props = ["ID"], indices = indices, quiet = True
+            self.fname, tSnap, props = ["ID"], indices = indices
         )["ID"]
 
 
