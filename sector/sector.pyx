@@ -7,7 +7,7 @@ from sfh cimport *
 import os, sys
 
 from .filters import *
-from .sedlib import STARBURST99_Salpeter
+from .sedlib import STARBURST99_Kroupa
 
 import numpy as np, h5py
 from numpy import isscalar
@@ -328,7 +328,7 @@ cdef class sector:
 
 
     def __cinit__(
-        self, sfh, h, Om0, sedPath = STARBURST99_Salpeter,
+        self, sfh, h, Om0, sedPath = STARBURST99_Kroupa,
         IGM = 'I2014', outType = 'ph', approx = False,
         betaBands = [], restBands = [[1600., 100.],], obsBands = [], obsFrame = False,
         pandas = False, nThread = 1, population = 2
@@ -368,7 +368,7 @@ cdef class sector:
 
 
 def composite_spectra(
-    fname, snapList, gals, h, Om0, sedPath = STARBURST99_Salpeter,
+    fname, snapList, gals, h, Om0, sedPath = STARBURST99_Kroupa,
     dust = None, approx = False, IGM = 'I2014', DeltaT = -1, population = 2,
     outType = 'ph',
     betaBands = [], restBands = [[1600, 100],], obsBands = [],
